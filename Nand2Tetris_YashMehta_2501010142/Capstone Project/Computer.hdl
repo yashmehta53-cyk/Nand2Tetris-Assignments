@@ -1,0 +1,25 @@
+// Capstone Project – Nand to Tetris I
+// Student Roll Number: 2501010142
+// Personal Number K: 42
+// Complete Hack computer: CPU + Memory + ROM32K.
+CHIP Computer {
+    IN reset;
+
+    PARTS:
+    ROM32K(address=pc, out=instruction);
+    CPU(
+        inM=memoryOut,
+        instruction=instruction,
+        reset=reset,
+        outM=outM,
+        writeM=writeM,
+        addressM=addressM,
+        pc=pc
+    );
+    Memory(
+        in=outM,
+        load=writeM,
+        address=addressM,
+        out=memoryOut
+    );
+}

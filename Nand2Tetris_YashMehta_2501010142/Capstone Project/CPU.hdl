@@ -1,0 +1,51 @@
+// Capstone Project – Nand to Tetris I
+// Student Roll Number: 2501010142
+// Personal Number K: 42
+// CPU for the Hack computer (Nand2Tetris Project 5)
+CHIP CPU {
+    IN inM[16], instruction[16], reset;
+    OUT outM[16], writeM, addressM[15], pc[15];
+
+    PARTS:
+    // Is this a C-instruction?
+    Not(in=instruction[15], out=isAInstruction);
+    Not(in=isAInstruction, out=isCInstruction);
+
+    // A register: load for every A-instruction, or C-instruction with dest A.
+    Or(a=isAInstruction, b=instruction[5], out=loadA);
+    Mux16(a=aluOut, b=instruction, sel=isAInstruction, out=aIn);
+    ARegister(in=aIn, load=loadA, out=aOut, out[0..14]=addressM);
+
+    // D register: load when a C-instruction has destination D.
+    And(a=isCInstruction, b=instruction[4], out=loadD);
+    DRegister(in=aluOut, load=loadD, out=dOut);
+
+    // Select A or M as the ALU's y input.
+    Mux16(a=aOut, b=inM, sel=instruction[12], out=aluY);
+
+    // ALU operation is controlled by the comp bits.
+    ALU(
+        x=dOut, y=aluY,
+        zx=instruction[11], nx=instruction[10],
+        zy=instruction[9], ny=instruction[8],
+        f=instruction[7], no=instruction[6],
+        out=aluOut, out=outM, zr=zr, ng=ng
+    );
+
+    // Write to memory only for a C-instruction with destination M.
+    And(a=isCInstruction, b=instruction[3], out=writeM);
+
+    // Work out whether the selected jump condition is true.
+    Not(in=ng, out=notNg);
+    Not(in=zr, out=notZr);
+    And(a=instruction[0], b=notNg, out=gt1);
+    And(a=gt1, b=notZr, out=jumpGT);
+    And(a=instruction[1], b=zr, out=jumpEQ);
+    And(a=instruction[2], b=ng, out=jumpLT);
+    Or(a=jumpGT, b=jumpEQ, out=jumpGEQpart);
+    Or(a=jumpGEQpart, b=jumpLT, out=jumpCondition);
+    And(a=isCInstruction, b=jumpCondition, out=loadPC);
+
+    // PC uses the A register as its target.
+    PC(in=aOut, load=loadPC, inc=true, reset=reset, out[0..14]=pc);
+}
